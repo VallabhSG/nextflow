@@ -198,7 +198,7 @@ interface HistoryPanelProps {
 
 export function HistoryPanel({ runs, loading }: HistoryPanelProps) {
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-zinc-800 bg-zinc-925 bg-zinc-900/40">
+    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900/40">
       <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
         <History className="h-4 w-4 text-zinc-400" />
         <h2 className="text-sm font-semibold text-zinc-200">History</h2>
