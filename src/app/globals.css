@@ -1,8 +1,10 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --accent: #8b5cf6;
 }
 
 @theme inline {
@@ -12,15 +14,89 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* ---------- React Flow theming ---------- */
+
+.react-flow {
+  --xy-background-color: #09090b;
+  --xy-minimap-background-color: #18181b;
+  --xy-controls-button-background-color: #18181b;
+  --xy-controls-button-background-color-hover: #27272a;
+  --xy-controls-button-color: #d4d4d8;
+  --xy-controls-button-border-color: #3f3f46;
+}
+
+.react-flow__handle {
+  width: 11px;
+  height: 11px;
+  border: 2px solid #09090b;
+  background: #8b5cf6;
+}
+
+.react-flow__handle.handle-text { background: #8b5cf6; }
+.react-flow__handle.handle-image { background: #22d3ee; }
+.react-flow__handle.handle-video { background: #f472b6; }
+.react-flow__handle.handle-audio { background: #fbbf24; }
+.react-flow__handle.handle-file { background: #94a3b8; }
+
+.react-flow__handle.connectingto {
+  background: #ef4444;
+}
+.react-flow__handle.valid {
+  background: #22c55e;
+}
+
+/* ---------- Animated purple edges ---------- */
+
+.nextflow-edge {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+  animation: edge-flow 0.6s linear infinite;
+  filter: drop-shadow(0 0 3px rgba(139, 92, 246, 0.6));
+}
+
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* ---------- Executing node pulsating glow ---------- */
+
+.node-glow-running {
+  animation: node-pulse 1.2s ease-in-out infinite;
+  border-color: var(--accent) !important;
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(139, 92, 246, 0);
+  }
+}
+
+.node-glow-success {
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.7);
+}
+
+.node-glow-failed {
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.8);
+}
+
+/* Custom scrollbars for panels */
+.panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 4px;
 }
