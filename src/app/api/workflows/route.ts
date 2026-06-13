@@ -15,10 +15,24 @@ export async function GET() {
         name: true,
         createdAt: true,
         updatedAt: true,
-        _count: { select: { runs: true } },
+        _count: {
+          select: {
+            runs: true,
+          },
+        },
+        runs: {
+          where: { status: "RUNNING" },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
-    return ok(workflows);
+    return ok(
+      workflows.map(({ runs, ...w }) => ({
+        ...w,
+        hasActiveRun: runs.length > 0,
+      }))
+    );
   });
 }
 

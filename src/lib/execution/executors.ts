@@ -18,7 +18,9 @@ export interface CropImagePayload {
 export interface GeminiPayload {
   prompt: string;
   systemPrompt?: string;
-  imageUrl?: string;
+  model?: string;
+  /** Image (Vision) accepts multiple simultaneous connections. */
+  imageUrls?: string[];
   videoUrl?: string;
   audioUrl?: string;
   fileUrl?: string;
@@ -125,7 +127,7 @@ export async function executeGemini(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: payload.model?.trim() || GEMINI_MODEL,
     ...(payload.systemPrompt?.trim()
       ? { systemInstruction: payload.systemPrompt }
       : {}),
@@ -134,7 +136,7 @@ export async function executeGemini(
   const parts: Part[] = [{ text: payload.prompt }];
 
   const mediaUrls = [
-    payload.imageUrl,
+    ...(payload.imageUrls ?? []),
     payload.videoUrl,
     payload.audioUrl,
     payload.fileUrl,

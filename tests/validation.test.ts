@@ -130,7 +130,7 @@ describe("type-safe connections", () => {
     expect(result.valid).toBe(true);
   });
 
-  test("rejects a second edge into an occupied input", () => {
+  test("rejects a second edge into an occupied single input", () => {
     const existing = [
       {
         id: "e1",
@@ -148,6 +148,25 @@ describe("type-safe connections", () => {
     });
     expect(result.valid).toBe(false);
     expect(result.reason).toMatch(/already connected/);
+  });
+
+  test("allows multiple simultaneous connections into Gemini Image (Vision)", () => {
+    const existing = [
+      {
+        id: "e1",
+        source: "inputs",
+        sourceHandle: "field-i1",
+        target: "llm",
+        targetHandle: "image",
+      },
+    ];
+    const result = checkConnection(nodes, existing, {
+      source: "crop",
+      sourceHandle: "image",
+      target: "llm",
+      targetHandle: "image",
+    });
+    expect(result.valid).toBe(true);
   });
 
   test("rejects connections that would create a cycle", () => {

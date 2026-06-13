@@ -1,5 +1,5 @@
 import type { SerializedEdge, SerializedNode } from "./types";
-import { handleDataType } from "./types";
+import { handleDataType, NODE_SPECS } from "./types";
 
 /**
  * Returns true if adding edge (source -> target) would create a cycle.
@@ -109,14 +109,20 @@ export function checkConnection(
     };
   }
 
-  // One incoming edge per target handle.
-  const occupied = edges.some(
-    (e) =>
-      e.target === connection.target &&
-      e.targetHandle === connection.targetHandle
+  // One incoming edge per target handle, unless the port allows multiple
+  // simultaneous connections (e.g. Gemini's Image (Vision)).
+  const targetPort = NODE_SPECS[targetNode.type].inputs.find(
+    (p) => p.id === connection.targetHandle
   );
-  if (occupied) {
-    return { valid: false, reason: "Input already connected" };
+  if (!targetPort?.multi) {
+    const occupied = edges.some(
+      (e) =>
+        e.target === connection.target &&
+        e.targetHandle === connection.targetHandle
+    );
+    if (occupied) {
+      return { valid: false, reason: "Input already connected" };
+    }
   }
 
   if (wouldCreateCycle(edges, connection.source, connection.target)) {

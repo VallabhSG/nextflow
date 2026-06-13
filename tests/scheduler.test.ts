@@ -217,15 +217,18 @@ describe("runWorkflowGraph", () => {
   test("sample workflow executes with correct fan-out and convergence", async () => {
     const graph = buildSampleGraph();
     const executed: string[] = [];
+    const received: Record<string, Record<string, string>> = {};
 
     const status = await runWorkflowGraph({
       runId: "run-6",
       graph,
       includeIds: new Set(graph.nodes.map((n) => n.id)),
       cachedOutputs: new Map(),
-      invoke: async (node) => {
+      invoke: async (node, inputs) => {
         executed.push(node.id);
-        if (node.type === "crop-image") return { image: "data:image/png;base64,x" };
+        received[node.id] = inputs;
+        if (node.type === "crop-image")
+          return { image: `cropped-by-${node.id}` };
         return { text: `${node.id}-says` };
       },
     });
@@ -233,22 +236,26 @@ describe("runWorkflowGraph", () => {
     expect(status).toBe("SUCCESS");
     // All 5 executable nodes ran exactly once.
     expect([...executed].sort()).toEqual([
-      "crop-banner",
-      "crop-tight",
-      "gemini-description",
+      "crop-1",
+      "crop-2",
+      "gemini-1",
+      "gemini-2",
       "gemini-final",
-      "gemini-hook",
     ]);
-    // Chain order respected.
-    expect(executed.indexOf("gemini-description")).toBeLessThan(
-      executed.indexOf("gemini-hook")
+    // Sequential Gemini chain order respected.
+    expect(executed.indexOf("gemini-1")).toBeLessThan(
+      executed.indexOf("gemini-2")
     );
-    expect(executed.indexOf("gemini-hook")).toBeLessThan(
+    expect(executed.indexOf("gemini-2")).toBeLessThan(
       executed.indexOf("gemini-final")
     );
-    expect(executed.indexOf("crop-banner")).toBeLessThan(
-      executed.indexOf("gemini-final")
-    );
+    // Both crops converge on Final Gemini's multi-connection Vision input.
+    const finalInputs = received["gemini-final"];
+    const images = Object.keys(finalInputs)
+      .filter((k) => k === "image" || k.startsWith("image#"))
+      .map((k) => finalInputs[k])
+      .sort();
+    expect(images).toEqual(["cropped-by-crop-1", "cropped-by-crop-2"]);
   });
 });
 
@@ -289,15 +296,30 @@ describe("buildInvokePayload", () => {
     });
   });
 
-  test("gemini payload merges node prompt with connected prompt input", () => {
+  test("connected prompt input takes precedence over manual entry", () => {
     const payload = buildInvokePayload(geminiNode, {
       prompt: "upstream text",
       image: "http://img",
     });
-    expect(payload.prompt).toBe("node prompt\n\nupstream text");
+    expect(payload.prompt).toBe("upstream text");
     expect(payload.systemPrompt).toBe("node system");
-    expect(payload.imageUrl).toBe("http://img");
+    expect(payload.imageUrls).toEqual(["http://img"]);
     expect(payload.videoUrl).toBeUndefined();
+  });
+
+  test("manual prompt is used when nothing is connected", () => {
+    const payload = buildInvokePayload(geminiNode, {});
+    expect(payload.prompt).toBe("node prompt");
+    expect(payload.imageUrls).toBeUndefined();
+  });
+
+  test("multiple vision connections become an ordered imageUrls array", () => {
+    const payload = buildInvokePayload(geminiNode, {
+      prompt: "p",
+      image: "http://first",
+      "image#2": "http://second",
+    });
+    expect(payload.imageUrls).toEqual(["http://first", "http://second"]);
   });
 
   test("throws for non-executable nodes", () => {

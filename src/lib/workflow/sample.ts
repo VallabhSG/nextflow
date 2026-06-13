@@ -1,18 +1,15 @@
 import type { WorkflowGraph } from "./types";
 
 /**
- * Pre-built 7-node sample workflow:
+ * Pre-built 7-node sample workflow (exact spec from the brief):
  *
- *   Request Inputs ──image──> Crop (tight) ──┐
- *                 ├─image──> Crop (banner)   ├──> Gemini #1 (description)
- *                 └─text───────────────────┘        │
- *                                                   v
- *                                          Gemini #2 (tweet hook)
- *                                                   │
- *   (desc + hook + banner crop) ──converge──> Gemini #3 (final post)
- *                                                   │
- *                                                   v
- *                                               Response
+ *   Request-Inputs.image_field ──> Crop #1 (20/20/60/60) ──┐
+ *                              └─> Crop #2 (0/0/100/50) ───┤ Image (Vision)
+ *   Request-Inputs.text_field ──> Gemini #1 ─> Gemini #2 ──┴─> Final Gemini ─> Response
+ *
+ * T=0: Crop #1, Crop #2, Gemini #1 start concurrently. Gemini #2 follows
+ * Gemini #1 without waiting on the crops. Final Gemini waits for both
+ * crops + Gemini #2 (parallel-then-converge).
  */
 export function buildSampleGraph(): WorkflowGraph {
   return {
@@ -26,15 +23,15 @@ export function buildSampleGraph(): WorkflowGraph {
           label: "Request Inputs",
           fields: [
             {
-              id: "product-text",
-              name: "Product Details",
+              id: "text_field",
+              name: "text_field",
               type: "text",
               value:
-                "Aurora X1 — noise-cancelling wireless headphones with 40h battery life, spatial audio, and USB-C fast charge.",
+                "Product: Wireless Bluetooth Headphones. Features: Noise cancellation, 30-hour battery, foldable design.",
             },
             {
-              id: "product-image",
-              name: "Product Image",
+              id: "image_field",
+              name: "image_field",
               type: "image",
               value: "",
             },
@@ -42,68 +39,65 @@ export function buildSampleGraph(): WorkflowGraph {
         },
       },
       {
-        id: "crop-tight",
+        id: "crop-1",
         type: "crop-image",
-        position: { x: 420, y: 40 },
+        position: { x: 420, y: 0 },
         data: {
           kind: "crop-image",
-          label: "Tight Product Crop",
-          cropX: 25,
-          cropY: 25,
-          cropWidth: 50,
+          label: "Crop Image #1",
+          cropX: 20,
+          cropY: 20,
+          cropWidth: 60,
+          cropHeight: 60,
+        },
+      },
+      {
+        id: "crop-2",
+        type: "crop-image",
+        position: { x: 420, y: 430 },
+        data: {
+          kind: "crop-image",
+          label: "Crop Image #2",
+          cropX: 0,
+          cropY: 0,
+          cropWidth: 100,
           cropHeight: 50,
         },
       },
       {
-        id: "crop-banner",
-        type: "crop-image",
-        position: { x: 420, y: 420 },
+        id: "gemini-1",
+        type: "gemini",
+        position: { x: 860, y: 180 },
         data: {
-          kind: "crop-image",
-          label: "Wide Banner Crop",
-          cropX: 0,
-          cropY: 30,
-          cropWidth: 100,
-          cropHeight: 40,
+          kind: "gemini",
+          label: "Gemini #1",
+          prompt: "",
+          systemPrompt:
+            "You are a marketing copywriter. Write a one-paragraph product description.",
         },
       },
       {
-        id: "gemini-description",
+        id: "gemini-2",
         type: "gemini",
-        position: { x: 860, y: 80 },
+        position: { x: 1300, y: 180 },
         data: {
           kind: "gemini",
-          label: "Product Description",
-          prompt:
-            "Write a compelling 2-3 sentence product description based on the product details and the product image.",
+          label: "Gemini #2",
+          prompt: "",
           systemPrompt:
-            "You are a senior e-commerce copywriter. Be concise, vivid, and benefit-driven.",
-        },
-      },
-      {
-        id: "gemini-hook",
-        type: "gemini",
-        position: { x: 1300, y: 80 },
-        data: {
-          kind: "gemini",
-          label: "Tweet Hook",
-          prompt:
-            "Turn this product description into a single scroll-stopping tweet hook (max 140 characters).",
-          systemPrompt:
-            "You are a viral social media ghostwriter. Output only the hook, no hashtags.",
+            "Condense the following product description into a tweet-length hook (under 240 characters).",
         },
       },
       {
         id: "gemini-final",
         type: "gemini",
-        position: { x: 1740, y: 240 },
+        position: { x: 1740, y: 200 },
         data: {
           kind: "gemini",
-          label: "Final Social Post",
-          prompt:
-            "Combine the tweet hook with the banner image context into a final polished social media post with 2-3 relevant hashtags.",
+          label: "Final Gemini",
+          prompt: "",
           systemPrompt:
-            "You are a brand social media manager. Keep it punchy and on-brand.",
+            "You are a social media manager. Combine the tweet hook and the two product crops into a final marketing post.",
         },
       },
       {
@@ -114,62 +108,62 @@ export function buildSampleGraph(): WorkflowGraph {
       },
     ],
     edges: [
-      // Fan-out from Request Inputs: two crops + Gemini #1 run concurrently.
+      // image_field fans out to both crops (single source, two targets).
       {
-        id: "e-img-croptight",
+        id: "e-img-crop1",
         source: "request-inputs",
-        sourceHandle: "field-product-image",
-        target: "crop-tight",
+        sourceHandle: "field-image_field",
+        target: "crop-1",
         targetHandle: "image",
       },
       {
-        id: "e-img-cropbanner",
+        id: "e-img-crop2",
         source: "request-inputs",
-        sourceHandle: "field-product-image",
-        target: "crop-banner",
+        sourceHandle: "field-image_field",
+        target: "crop-2",
         targetHandle: "image",
       },
+      // text_field -> Gemini #1.Prompt
       {
         id: "e-text-gem1",
         source: "request-inputs",
-        sourceHandle: "field-product-text",
-        target: "gemini-description",
+        sourceHandle: "field-text_field",
+        target: "gemini-1",
         targetHandle: "prompt",
-      },
-      // Tight crop feeds Gemini #1 vision.
-      {
-        id: "e-croptight-gem1",
-        source: "crop-tight",
-        sourceHandle: "image",
-        target: "gemini-description",
-        targetHandle: "image",
       },
       // Sequential Gemini chain.
       {
         id: "e-gem1-gem2",
-        source: "gemini-description",
+        source: "gemini-1",
         sourceHandle: "text",
-        target: "gemini-hook",
+        target: "gemini-2",
         targetHandle: "prompt",
       },
-      // Parallel-then-converge: hook text + banner crop into final Gemini.
       {
-        id: "e-gem2-gem3",
-        source: "gemini-hook",
+        id: "e-gem2-final",
+        source: "gemini-2",
         sourceHandle: "text",
         target: "gemini-final",
         targetHandle: "prompt",
       },
+      // Both crops converge on Final Gemini's multi-connection Vision input.
       {
-        id: "e-cropbanner-gem3",
-        source: "crop-banner",
+        id: "e-crop1-final",
+        source: "crop-1",
+        sourceHandle: "image",
+        target: "gemini-final",
+        targetHandle: "image",
+      },
+      {
+        id: "e-crop2-final",
+        source: "crop-2",
         sourceHandle: "image",
         target: "gemini-final",
         targetHandle: "image",
       },
       // Final output.
       {
-        id: "e-gem3-response",
+        id: "e-final-response",
         source: "gemini-final",
         sourceHandle: "text",
         target: "response",
@@ -191,7 +185,7 @@ export function buildEmptyGraph(): WorkflowGraph {
           kind: "request-inputs",
           label: "Request Inputs",
           fields: [
-            { id: "input-1", name: "Input 1", type: "text", value: "" },
+            { id: "text_field", name: "text_field", type: "text", value: "" },
           ],
         },
       },

@@ -45,8 +45,16 @@ export interface GeminiData {
   label: string;
   prompt: string;
   systemPrompt: string;
+  /** Model id; defaults to gemini-3.1-pro. */
+  model?: string;
   [key: string]: unknown;
 }
+
+export const GEMINI_MODELS = [
+  "gemini-3.1-pro",
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+] as const;
 
 export interface ResponseData {
   kind: "response";
@@ -66,6 +74,8 @@ export interface PortSpec {
   label: string;
   dataType: PortDataType;
   required?: boolean;
+  /** Allows multiple simultaneous incoming connections. */
+  multi?: boolean;
 }
 
 export interface NodeSpec {
@@ -106,9 +116,9 @@ export const NODE_SPECS: Record<NodeKind, NodeSpec> = {
     deletable: true,
     executable: true,
     inputs: [
-      { id: "prompt", label: "Prompt", dataType: "text" },
+      { id: "prompt", label: "Prompt", dataType: "text", required: true },
       { id: "system", label: "System Prompt", dataType: "text" },
-      { id: "image", label: "Vision", dataType: "image" },
+      { id: "image", label: "Image (Vision)", dataType: "image", multi: true },
       { id: "video", label: "Video", dataType: "video" },
       { id: "audio", label: "Audio", dataType: "audio" },
       { id: "file", label: "File", dataType: "file" },
@@ -173,6 +183,7 @@ export const nodeDataSchema = z.discriminatedUnion("kind", [
     label: z.string(),
     prompt: z.string(),
     systemPrompt: z.string(),
+    model: z.string().optional(),
   }),
   z.object({
     kind: z.literal("response"),

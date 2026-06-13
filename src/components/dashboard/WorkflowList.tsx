@@ -19,6 +19,7 @@ interface WorkflowSummary {
   createdAt: string;
   updatedAt: string;
   _count: { runs: number };
+  hasActiveRun: boolean;
 }
 
 export function WorkflowList() {
@@ -167,9 +168,17 @@ export function WorkflowList() {
                   <MoreVertical className="h-4 w-4" />
                 </button>
               </div>
-              <h3 className="mt-3 truncate text-sm font-semibold text-zinc-900">
-                {workflow.name}
-              </h3>
+              <div className="mt-3 flex items-center gap-2">
+                <h3 className="truncate text-sm font-semibold text-zinc-900">
+                  {workflow.name}
+                </h3>
+                {workflow.hasActiveRun && (
+                  <span className="flex shrink-0 items-center gap-1 rounded-full border border-violet-300 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-violet-600">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-500" />
+                    Running
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-xs text-zinc-500">
                 {workflow._count.runs} run{workflow._count.runs === 1 ? "" : "s"}
                 {" · "}updated{" "}

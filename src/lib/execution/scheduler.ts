@@ -87,11 +87,13 @@ export async function runWorkflowGraph(
     nodeId: string
   ): Promise<{ inputs: Record<string, string>; upstreamFailed: boolean }> {
     const edges = incoming.get(nodeId) ?? [];
-    const inputs: Record<string, string> = {};
+    // Per-handle value lists, in edge order, so multi-connection handles
+    // (e.g. Gemini Image (Vision)) receive every connected value.
+    const collected = new Map<string, (string | undefined)[]>();
     let upstreamFailed = false;
 
     await Promise.all(
-      edges.map(async (edge) => {
+      edges.map(async (edge, index) => {
         const sourceId = edge.source;
         const sourceHandle = edge.sourceHandle ?? "";
         const targetHandle = edge.targetHandle ?? "";
@@ -119,10 +121,21 @@ export async function runWorkflowGraph(
 
         const value = outputs[sourceHandle];
         if (value !== undefined && value !== "") {
-          inputs[targetHandle] = value;
+          const list = collected.get(targetHandle) ?? [];
+          list[index] = value;
+          collected.set(targetHandle, list);
         }
       })
     );
+
+    // Flatten: first value keeps the handle id, extras get `handle#2`, ...
+    const inputs: Record<string, string> = {};
+    for (const [handle, values] of collected) {
+      const ordered = values.filter((v): v is string => v !== undefined);
+      ordered.forEach((value, i) => {
+        inputs[i === 0 ? handle : `${handle}#${i + 1}`] = value;
+      });
+    }
 
     return { inputs, upstreamFailed };
   }
@@ -270,13 +283,17 @@ export function buildInvokePayload(
   }
   if (node.type === "gemini") {
     const data = node.data as GeminiData;
-    const promptParts = [data.prompt, inputs["prompt"]].filter(Boolean);
+    // Connected inputs take precedence over manual entry (the UI greys
+    // out manual fields once a handle is connected).
+    const imageUrls = Object.keys(inputs)
+      .filter((k) => k === "image" || k.startsWith("image#"))
+      .sort()
+      .map((k) => inputs[k]);
     return {
-      prompt: promptParts.join("\n\n"),
-      systemPrompt:
-        [data.systemPrompt, inputs["system"]].filter(Boolean).join("\n\n") ||
-        undefined,
-      imageUrl: inputs["image"] || undefined,
+      prompt: inputs["prompt"] ?? data.prompt,
+      systemPrompt: inputs["system"] ?? (data.systemPrompt || undefined),
+      model: data.model,
+      imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
       videoUrl: inputs["video"] || undefined,
       audioUrl: inputs["audio"] || undefined,
       fileUrl: inputs["file"] || undefined,
