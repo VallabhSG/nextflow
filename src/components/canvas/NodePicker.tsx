@@ -1,15 +1,31 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Crop, Plus, Search, Sparkles, StickyNote, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Boxes,
+  Clock,
+  Crop,
+  Image as ImageIcon,
+  Music,
+  Plus,
+  Search,
+  Sparkles,
+  StickyNote,
+  Video,
+  X,
+} from "lucide-react";
 import type { NodeKind } from "@/lib/workflow/types";
+
+type Category = "Image" | "Video" | "Audio" | "Others";
+type IconType = React.ComponentType<{ className?: string }>;
 
 interface PickerEntry {
   kind: NodeKind;
   title: string;
   description: string;
-  category: "Image" | "Video" | "Audio" | "Others";
-  icon: React.ReactNode;
+  category: Category;
+  Icon: IconType;
+  iconClass: string;
 }
 
 const ENTRIES: PickerEntry[] = [
@@ -18,19 +34,26 @@ const ENTRIES: PickerEntry[] = [
     title: "Crop Image",
     description: "Crop an image region with FFmpeg",
     category: "Image",
-    icon: <Crop className="h-4 w-4 text-blue-500" />,
+    Icon: Crop,
+    iconClass: "text-blue-500",
   },
   {
     kind: "gemini",
     title: "Gemini 3.1 Pro",
     description: "Multimodal LLM — text, vision, video, audio, files",
     category: "Others",
-    icon: <Sparkles className="h-4 w-4 text-[#6c5ce7]" />,
+    Icon: Sparkles,
+    iconClass: "text-[#6c5ce7]",
   },
 ];
 
-const CATEGORIES = ["Recent", "Image", "Video", "Audio", "Others"] as const;
-type Category = (typeof CATEGORIES)[number];
+/** Category section headers (icon + label), in display order. */
+const CATEGORY_META: { name: Category; Icon: IconType }[] = [
+  { name: "Image", Icon: ImageIcon },
+  { name: "Video", Icon: Video },
+  { name: "Audio", Icon: Music },
+  { name: "Others", Icon: Boxes },
+];
 
 const RECENT_KEY = "nextflow-recent-nodes";
 
@@ -58,36 +81,45 @@ export function NodePicker({
   onOpenChange,
 }: NodePickerProps) {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<Category>("Recent");
   const [recents, setRecents] = useState<NodeKind[]>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   function setOpen(next: boolean) {
     if (next) {
       setRecents(readRecents());
       setQuery("");
-      requestAnimationFrame(() => inputRef.current?.focus());
     }
     onOpenChange(next);
   }
 
-  const visible = useMemo(() => {
+  /** Grouped sections (Recent + each category), filtered by the search query. */
+  const sections = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q) {
-      return ENTRIES.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          e.description.toLowerCase().includes(q)
-      );
-    }
-    if (category === "Recent") {
-      const list = recents
+    const matches = (e: PickerEntry) =>
+      !q ||
+      e.title.toLowerCase().includes(q) ||
+      e.description.toLowerCase().includes(q);
+
+    const result: { name: string; Icon: IconType; items: PickerEntry[] }[] = [];
+
+    if (!q) {
+      const recentItems = recents
         .map((kind) => ENTRIES.find((e) => e.kind === kind))
         .filter((e): e is PickerEntry => Boolean(e));
-      return list.length > 0 ? list : ENTRIES;
+      if (recentItems.length > 0) {
+        result.push({ name: "Recent", Icon: Clock, items: recentItems });
+      }
     }
-    return ENTRIES.filter((e) => e.category === category);
-  }, [query, category, recents]);
+
+    for (const meta of CATEGORY_META) {
+      const items = ENTRIES.filter(
+        (e) => e.category === meta.name && matches(e)
+      );
+      if (items.length > 0) {
+        result.push({ name: meta.name, Icon: meta.Icon, items });
+      }
+    }
+    return result;
+  }, [query, recents]);
 
   function pick(kind: NodeKind) {
     const next = [kind, ...readRecents().filter((k) => k !== kind)].slice(0, 8);
@@ -108,10 +140,10 @@ export function NodePicker({
             <div className="flex items-center gap-2 border-b border-zinc-100 px-3 py-2">
               <Search className="h-4 w-4 text-zinc-400" />
               <input
-                ref={inputRef}
+                autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search nodes…"
+                placeholder="Search nodes or models…"
                 className="flex-1 bg-transparent text-sm text-zinc-800 outline-none placeholder:text-zinc-400"
               />
               <button
@@ -124,50 +156,39 @@ export function NodePicker({
               </button>
             </div>
 
-            {!query && (
-              <div className="flex gap-1 border-b border-zinc-100 px-2 py-1.5">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCategory(c)}
-                    className={`rounded-md px-2.5 py-1 text-xs ${
-                      category === c
-                        ? "bg-[#6c5ce7]/10 font-medium text-[#6c5ce7]"
-                        : "text-zinc-500 hover:bg-zinc-100"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="panel-scroll max-h-64 overflow-y-auto p-2">
-              {visible.length === 0 ? (
+            <div className="panel-scroll max-h-72 overflow-y-auto p-1.5">
+              {sections.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs text-zinc-400">
-                  No nodes match{query ? ` “${query}”` : " this category"}.
+                  No nodes match “{query}”.
                 </p>
               ) : (
-                visible.map((entry) => (
-                  <button
-                    key={entry.kind}
-                    type="button"
-                    onClick={() => pick(entry.kind)}
-                    className="flex w-full items-start gap-3 rounded-lg px-2.5 py-2 text-left hover:bg-zinc-50"
-                  >
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white">
-                      {entry.icon}
-                    </span>
-                    <span>
-                      <span className="block text-sm font-medium text-zinc-800">
-                        {entry.title}
-                      </span>
-                      <span className="block text-xs text-zinc-500">
-                        {entry.description}
-                      </span>
-                    </span>
-                  </button>
+                sections.map((section) => (
+                  <div key={section.name} className="mb-1">
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 text-[11px] font-semibold text-zinc-500">
+                      <section.Icon className="h-3.5 w-3.5" />
+                      {section.name}
+                    </div>
+                    {section.items.map((entry) => (
+                      <button
+                        key={`${section.name}-${entry.kind}`}
+                        type="button"
+                        onClick={() => pick(entry.kind)}
+                        className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-zinc-50"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white">
+                          <entry.Icon className={`h-4 w-4 ${entry.iconClass}`} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-medium text-zinc-800">
+                            {entry.title}
+                          </span>
+                          <span className="block truncate text-[11px] text-zinc-500">
+                            {entry.description}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 ))
               )}
             </div>

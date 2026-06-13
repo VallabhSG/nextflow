@@ -21,6 +21,7 @@ import {
   Gauge,
   History as HistoryIcon,
   Loader2,
+  Map,
   Play,
   Plus,
   Redo2,
@@ -75,6 +76,7 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [minimapOpen, setMinimapOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -388,14 +390,30 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
                 color="#d4d4d8"
               />
               <Controls position="bottom-left" />
-              <MiniMap
-                position="bottom-right"
-                pannable
-                zoomable
-                nodeColor="#c7c2f4"
-                maskColor="rgba(247, 247, 248, 0.8)"
-              />
+              {minimapOpen && (
+                <MiniMap
+                  position="bottom-right"
+                  pannable
+                  zoomable
+                  nodeColor="#c7c2f4"
+                  maskColor="rgba(247, 247, 248, 0.8)"
+                />
+              )}
             </ReactFlow>
+
+            {/* Minimap toggle (bottom-right), matching the reference */}
+            <button
+              type="button"
+              onClick={() => setMinimapOpen((v) => !v)}
+              className={`absolute right-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg border shadow-sm transition ${
+                minimapOpen
+                  ? "bottom-[172px] border-[#6c5ce7]/40 bg-[#6c5ce7]/10 text-[#6c5ce7]"
+                  : "bottom-4 border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+              }`}
+              title={minimapOpen ? "Hide minimap" : "Show minimap"}
+            >
+              <Map className="h-4 w-4" />
+            </button>
 
             {/* Floating top-left: back + editable title pill */}
             <div className="absolute left-4 top-4 z-10 flex items-center gap-1 rounded-full border border-zinc-200 bg-white py-1 pl-1 pr-3 shadow-sm">

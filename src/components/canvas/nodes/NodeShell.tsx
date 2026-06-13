@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import {
   CheckCircle2,
+  Coins,
   Copy,
   Loader2,
   MinusCircle,
@@ -29,6 +30,8 @@ interface NodeShellProps {
   children: ReactNode;
   width?: number;
   headerExtra?: ReactNode;
+  /** Estimated run cost in credits (millions), shown as a footer like Magica. */
+  cost?: number;
 }
 
 function StatusBadge({ status }: { status?: NodeRuntimeStatus }) {
@@ -57,6 +60,7 @@ export function NodeShell({
   children,
   width = 280,
   headerExtra,
+  cost,
 }: NodeShellProps) {
   const status = useWorkflowStore((s) => s.nodeStatuses[nodeId]);
   const runHandler = useWorkflowStore((s) => s.runHandler);
@@ -143,6 +147,11 @@ export function NodeShell({
         )}
       </div>
       <div className="px-3 py-2.5">{children}</div>
+      {cost !== undefined && (
+        <div className="flex items-center justify-end gap-1 border-t border-zinc-100 px-3 py-1.5 text-[10px] text-zinc-400">
+          <Coins className="h-3 w-3" />~{cost.toFixed(4)}M
+        </div>
+      )}
     </div>
   );
 }

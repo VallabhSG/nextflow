@@ -34,6 +34,7 @@ export function CropImageNode({
       runnable
       deletable
       width={250}
+      cost={0.001}
     >
       <Handle
         type="target"

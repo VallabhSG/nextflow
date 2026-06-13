@@ -43,6 +43,7 @@ export function GeminiNode({
       runnable
       deletable
       width={290}
+      cost={0.0001}
       headerExtra={
         <select
           value={data.model ?? ""}
