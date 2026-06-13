@@ -405,7 +405,7 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
                 <Zap className="h-3.5 w-3.5 text-amber-500" />
                 <span className="font-medium text-zinc-500">Est</span>
                 <span className="font-semibold text-zinc-800">
-                  {estCost.toFixed(2)}
+                  {estCost >= 0.01 ? estCost.toFixed(2) : estCost.toFixed(4)}
                 </span>
                 <span className="text-zinc-400">M</span>
               </span>
