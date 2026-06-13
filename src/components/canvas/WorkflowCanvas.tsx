@@ -16,24 +16,18 @@ import {
 import {
   ArrowLeft,
   Clock,
-  Coins,
   Download,
-  Gauge,
-  History as HistoryIcon,
   Loader2,
   Map,
   Play,
-  Plus,
   Redo2,
   Save,
-  Search,
-  Settings,
   Trash2,
   Undo2,
   Upload,
-  Workflow as WorkflowIcon,
+  Wallet,
+  Zap,
 } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
 import { useWorkflowStore } from "@/store/workflow-store";
 import type { NodeKind, WorkflowGraph } from "@/lib/workflow/types";
 import { workflowExportSchema } from "@/lib/workflow/types";
@@ -44,6 +38,7 @@ import { ResponseNode } from "./nodes/ResponseNode";
 import { NoteNode } from "./nodes/NoteNode";
 import { AnimatedEdge } from "./AnimatedEdge";
 import { NodePicker } from "./NodePicker";
+import { CanvasSidebar } from "./CanvasSidebar";
 import { HistoryPanel, type RunDto } from "@/components/history/HistoryPanel";
 
 const nodeTypes: NodeTypes = {
@@ -65,9 +60,6 @@ interface WorkflowCanvasProps {
   workflowName: string;
   graph: WorkflowGraph;
 }
-
-const railButtonClass =
-  "flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition";
 
 function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
   const store = useWorkflowStore();
@@ -314,52 +306,23 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
     (n) => n.selected && n.deletable !== false
   );
   const running = Boolean(store.activeRunId);
-  const executableCount = store.nodes.filter(
+  const executableNodes = store.nodes.filter(
     (n) => n.type === "gemini" || n.type === "crop-image"
-  ).length;
+  );
+  const executableCount = executableNodes.length;
+  // Estimated run cost (credits, millions) — mirrors the per-node estimates.
+  const estCost = executableNodes.reduce(
+    (sum, n) => sum + (n.type === "crop-image" ? 0.001 : 0.0001),
+    0
+  );
 
   return (
     <div className="flex h-screen bg-white">
-      {/* Left icon rail */}
-      <nav className="flex w-14 shrink-0 flex-col items-center gap-1 border-r border-zinc-200 bg-white py-3">
-        <Link
-          href="/app/workflows"
-          className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-white"
-          title="NextFlow"
-        >
-          <WorkflowIcon className="h-4.5 w-4.5" />
-        </Link>
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className={railButtonClass}
-          title="Add node"
-        >
-          <Plus className="h-4.5 w-4.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className={railButtonClass}
-          title="Search nodes"
-        >
-          <Search className="h-4.5 w-4.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setHistoryOpen((v) => !v)}
-          className={railButtonClass}
-          title="Run history"
-        >
-          <HistoryIcon className="h-4.5 w-4.5" />
-        </button>
-        <div className="mt-auto flex flex-col items-center gap-2">
-          <button type="button" className={railButtonClass} title="Settings">
-            <Settings className="h-4.5 w-4.5" />
-          </button>
-          <UserButton />
-        </div>
-      </nav>
+      <CanvasSidebar
+        onOpenPicker={() => setPickerOpen(true)}
+        historyOpen={historyOpen}
+        onToggleHistory={() => setHistoryOpen((v) => !v)}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1">
@@ -435,13 +398,25 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
 
             {/* Floating top-right: stats + actions */}
             <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-600 shadow-sm">
-                <Gauge className="h-3.5 w-3.5 text-zinc-400" />
-                Est {executableCount} task{executableCount === 1 ? "" : "s"}
+              <span
+                className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-600 shadow-sm"
+                title={`Estimated run cost across ${executableCount} task${executableCount === 1 ? "" : "s"}`}
+              >
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                <span className="font-medium text-zinc-500">Est</span>
+                <span className="font-semibold text-zinc-800">
+                  {estCost.toFixed(2)}
+                </span>
+                <span className="text-zinc-400">M</span>
               </span>
-              <span className="flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-600 shadow-sm">
-                <Coins className="h-3.5 w-3.5 text-zinc-400" />
-                {runs.length} run{runs.length === 1 ? "" : "s"}
+              <span
+                className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-[11px] text-zinc-600 shadow-sm"
+                title="Credit balance"
+              >
+                <Wallet className="h-3.5 w-3.5 text-zinc-400" />
+                <span className="font-medium text-zinc-500">Bal</span>
+                <span className="font-semibold text-zinc-800">0.00</span>
+                <span className="text-zinc-400">M</span>
               </span>
 
               <div className="mx-0.5 h-5 w-px bg-zinc-200" />
