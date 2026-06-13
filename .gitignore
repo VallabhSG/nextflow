@@ -48,3 +48,7 @@ next-env.d.ts
 .claude/
 
 .vercel
+
+# Playwright MCP artifacts & UI comparison screenshots
+.playwright-mcp/
+/*.png

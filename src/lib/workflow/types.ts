@@ -11,7 +11,12 @@ export const PORT_DATA_TYPES: PortDataType[] = [
   "file",
 ];
 
-export type NodeKind = "request-inputs" | "crop-image" | "gemini" | "response";
+export type NodeKind =
+  | "request-inputs"
+  | "crop-image"
+  | "gemini"
+  | "response"
+  | "note";
 
 /** A single configurable field on the Request-Inputs node. */
 export interface RequestInputField {
@@ -62,11 +67,22 @@ export interface ResponseData {
   [key: string]: unknown;
 }
 
+/** A free-floating sticky note on the canvas (not part of the executable graph). */
+export interface NoteData {
+  kind: "note";
+  label: string;
+  text: string;
+  width?: number;
+  height?: number;
+  [key: string]: unknown;
+}
+
 export type WorkflowNodeData =
   | RequestInputsData
   | CropImageData
   | GeminiData
-  | ResponseData;
+  | ResponseData
+  | NoteData;
 
 /** Static description of one input/output port of a node type. */
 export interface PortSpec {
@@ -134,6 +150,15 @@ export const NODE_SPECS: Record<NodeKind, NodeSpec> = {
     inputs: [{ id: "input", label: "Final Output", dataType: "text" }],
     outputs: [],
   },
+  note: {
+    kind: "note",
+    title: "Note",
+    category: "Others",
+    deletable: true,
+    executable: false,
+    inputs: [],
+    outputs: [],
+  },
 };
 
 /** Resolve the data type carried by a given handle of a node. */
@@ -189,11 +214,18 @@ export const nodeDataSchema = z.discriminatedUnion("kind", [
     kind: z.literal("response"),
     label: z.string(),
   }),
+  z.object({
+    kind: z.literal("note"),
+    label: z.string(),
+    text: z.string(),
+    width: z.number().optional(),
+    height: z.number().optional(),
+  }),
 ]);
 
 export const workflowNodeSchema = z.object({
   id: z.string(),
-  type: z.enum(["request-inputs", "crop-image", "gemini", "response"]),
+  type: z.enum(["request-inputs", "crop-image", "gemini", "response", "note"]),
   position: positionSchema,
   data: nodeDataSchema,
 });

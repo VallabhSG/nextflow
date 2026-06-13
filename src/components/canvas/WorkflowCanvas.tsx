@@ -40,6 +40,7 @@ import { RequestInputsNode } from "./nodes/RequestInputsNode";
 import { CropImageNode } from "./nodes/CropImageNode";
 import { GeminiNode } from "./nodes/GeminiNode";
 import { ResponseNode } from "./nodes/ResponseNode";
+import { NoteNode } from "./nodes/NoteNode";
 import { AnimatedEdge } from "./AnimatedEdge";
 import { NodePicker } from "./NodePicker";
 import { HistoryPanel, type RunDto } from "@/components/history/HistoryPanel";
@@ -49,6 +50,7 @@ const nodeTypes: NodeTypes = {
   "crop-image": CropImageNode,
   gemini: GeminiNode,
   response: ResponseNode,
+  note: NoteNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -257,6 +259,16 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [screenToFlowPosition]
   );
+
+  const addNote = useCallback(() => {
+    const bounds = wrapperRef.current?.getBoundingClientRect();
+    const position = screenToFlowPosition({
+      x: (bounds?.left ?? 0) + (bounds?.width ?? 800) / 2,
+      y: (bounds?.top ?? 0) + (bounds?.height ?? 600) / 2,
+    });
+    store.addNote(position);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenToFlowPosition]);
 
   const exportJson = useCallback(() => {
     const state = useWorkflowStore.getState();
@@ -527,6 +539,7 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
 
             <NodePicker
               onAdd={addNode}
+              onAddNote={addNote}
               open={pickerOpen}
               onOpenChange={setPickerOpen}
             />

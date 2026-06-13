@@ -58,12 +58,17 @@ async function latestOutputs(
 export async function startRun(options: StartRunOptions): Promise<string> {
   const { workflowId, userId, graph, selectedIds } = options;
 
+  // Notes are canvas annotations, never executed.
+  const runnable = graph.nodes.filter((n) => n.type !== "note");
+
   const includeIds =
     selectedIds && selectedIds.length > 0
-      ? selectedIds.filter((id) => graph.nodes.some((n) => n.id === id))
-      : graph.nodes.map((n) => n.id);
+      ? selectedIds.filter((id) =>
+          runnable.some((n) => n.id === id)
+        )
+      : runnable.map((n) => n.id);
 
-  const scope = scopeFor(selectedIds, graph.nodes.length);
+  const scope = scopeFor(selectedIds, runnable.length);
 
   const run = await prisma.workflowRun.create({
     data: {

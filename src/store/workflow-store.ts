@@ -65,6 +65,7 @@ interface WorkflowStore {
   onConnect: (connection: Connection) => void;
   isValidConnection: (connection: Connection | FlowEdge) => boolean;
   addNode: (kind: NodeKind, position: { x: number; y: number }) => void;
+  addNote: (position: { x: number; y: number }) => void;
   updateNodeData: (id: string, data: Partial<WorkflowNodeData>) => void;
   deleteNodes: (ids: string[]) => void;
   deleteEdges: (ids: string[]) => void;
@@ -275,6 +276,24 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       type: kind,
       position,
       data,
+      deletable: true,
+    };
+    set({ nodes: [...get().nodes, node], dirty: true });
+  },
+
+  addNote: (position) => {
+    get().pushHistory();
+    const node: FlowNode = {
+      id: `note-${nanoid(8)}`,
+      type: "note",
+      position,
+      data: {
+        kind: "note",
+        label: "Note",
+        text: "",
+        width: 220,
+        height: 150,
+      },
       deletable: true,
     };
     set({ nodes: [...get().nodes, node], dirty: true });

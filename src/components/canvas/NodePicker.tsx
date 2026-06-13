@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Crop, Plus, Search, Sparkles, X } from "lucide-react";
+import { Crop, Plus, Search, Sparkles, StickyNote, X } from "lucide-react";
 import type { NodeKind } from "@/lib/workflow/types";
 
 interface PickerEntry {
@@ -45,12 +45,18 @@ function readRecents(): NodeKind[] {
 
 interface NodePickerProps {
   onAdd: (kind: NodeKind) => void;
+  onAddNote: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-/** Bottom-center "+" picker with searchable categories. */
-export function NodePicker({ onAdd, open, onOpenChange }: NodePickerProps) {
+/** Bottom-center toolbar: [Add note] [Add node] with a searchable picker. */
+export function NodePicker({
+  onAdd,
+  onAddNote,
+  open,
+  onOpenChange,
+}: NodePickerProps) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("Recent");
   const [recents, setRecents] = useState<NodeKind[]>([]);
@@ -168,17 +174,30 @@ export function NodePicker({ onAdd, open, onOpenChange }: NodePickerProps) {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="flex h-10 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 text-zinc-700 shadow-lg transition hover:border-[#6c5ce7] hover:text-[#6c5ce7]"
-          aria-label="Add node"
-        >
-          <Plus
-            className={`h-4.5 w-4.5 transition-transform ${open ? "rotate-45" : ""}`}
-          />
-          <span className="text-xs font-medium">Add node</span>
-        </button>
+        <div className="flex items-center gap-1 rounded-full border border-zinc-200 bg-white p-1 shadow-lg">
+          <button
+            type="button"
+            onClick={onAddNote}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-600 transition hover:bg-amber-100 hover:text-amber-600"
+            aria-label="Add note"
+            title="Add note"
+          >
+            <StickyNote className="h-4 w-4" />
+          </button>
+          <div className="h-5 w-px bg-zinc-200" />
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-zinc-700 transition hover:bg-[#6c5ce7]/10 hover:text-[#6c5ce7]"
+            aria-label="Add node"
+            title="Add node"
+          >
+            <Plus
+              className={`h-4.5 w-4.5 transition-transform ${open ? "rotate-45" : ""}`}
+            />
+            <span className="text-xs font-medium">Add node</span>
+          </button>
+        </div>
       </div>
     </div>
   );
