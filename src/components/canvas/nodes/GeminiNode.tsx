@@ -5,11 +5,16 @@ import { Sparkles } from "lucide-react";
 import type { GeminiData } from "@/lib/workflow/types";
 import { NODE_SPECS } from "@/lib/workflow/types";
 import { useWorkflowStore } from "@/store/workflow-store";
-import { NodeShell, fieldLabelClass, inputClass } from "./NodeShell";
+import {
+  NodeOutput,
+  NodeShell,
+  fieldLabelClass,
+  inputClass,
+} from "./NodeShell";
 
 const INPUT_PORTS = NODE_SPECS.gemini.inputs;
-const PORT_SPACING = 26;
-const PORTS_TOP = 50;
+const PORT_SPACING = 24;
+const PORTS_TOP = 48;
 
 export function GeminiNode({
   id,
@@ -23,11 +28,13 @@ export function GeminiNode({
       nodeId={id}
       title={data.label}
       icon={<Sparkles className="h-3.5 w-3.5" />}
-      accent="#8b5cf6"
+      accent="#6c5ce7"
       selected={selected}
-      width={300}
+      runnable
+      deletable
+      width={290}
     >
-      {/* Input ports along the left edge with labels */}
+      {/* Input ports along the left edge, one per labeled row */}
       {INPUT_PORTS.map((port, i) => (
         <Handle
           key={port.id}
@@ -54,6 +61,7 @@ export function GeminiNode({
             style={{ height: PORT_SPACING, lineHeight: `${PORT_SPACING}px` }}
           >
             {port.label}
+            {port.id === "prompt" ? " *" : ""}
           </div>
         ))}
       </div>
@@ -65,12 +73,12 @@ export function GeminiNode({
         className={`${inputClass} mb-2`}
       />
 
-      <label className={fieldLabelClass}>Prompt</label>
+      <label className={fieldLabelClass}>Prompt *</label>
       <textarea
         value={data.prompt}
         onChange={(e) => updateNodeData(id, { prompt: e.target.value })}
         rows={3}
-        placeholder="Instructions for the model…"
+        placeholder="Enter your prompt…"
         className={`${inputClass} mb-2 resize-none`}
       />
 
@@ -82,6 +90,8 @@ export function GeminiNode({
         placeholder="Optional system instruction…"
         className={`${inputClass} resize-none`}
       />
+
+      <NodeOutput nodeId={id} outputKey="text" label="Response" />
     </NodeShell>
   );
 }

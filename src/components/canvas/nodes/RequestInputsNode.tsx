@@ -2,7 +2,15 @@
 
 import { useRef, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { FormInput, ImagePlus, Plus, Trash2, Upload, Loader2 } from "lucide-react";
+import {
+  FormInput,
+  ImagePlus,
+  Loader2,
+  Plus,
+  Trash2,
+  Type,
+  Upload,
+} from "lucide-react";
 import { nanoid } from "nanoid";
 import type { RequestInputsData } from "@/lib/workflow/types";
 import { useWorkflowStore } from "@/store/workflow-store";
@@ -59,7 +67,7 @@ function ImageField({
         <img
           src={value}
           alt="Uploaded"
-          className="nodrag h-12 w-full cursor-pointer rounded-md border border-zinc-700 object-cover"
+          className="nodrag h-14 w-full cursor-pointer rounded-md border border-zinc-200 object-cover"
           onClick={() => fileRef.current?.click()}
         />
       ) : (
@@ -67,17 +75,17 @@ function ImageField({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="nodrag flex h-12 w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-zinc-700 text-[11px] text-zinc-500 hover:border-violet-500 hover:text-violet-400"
+          className="nodrag flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 text-[11px] text-zinc-500 hover:border-[#6c5ce7] hover:text-[#6c5ce7]"
         >
           {uploading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Upload className="h-3.5 w-3.5" />
           )}
-          {uploading ? "Uploading…" : "Upload image"}
+          {uploading ? "Uploading…" : "Upload Image"}
         </button>
       )}
-      {error && <p className="mt-1 text-[10px] text-red-400">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-red-500">{error}</p>}
     </div>
   );
 }
@@ -88,6 +96,7 @@ export function RequestInputsNode({
   selected,
 }: NodeProps & { data: RequestInputsData }) {
   const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
+  const [addOpen, setAddOpen] = useState(false);
 
   function setField(fieldId: string, value: string) {
     updateNodeData(id, {
@@ -106,12 +115,13 @@ export function RequestInputsNode({
   }
 
   function addField(type: "text" | "image") {
+    setAddOpen(false);
     updateNodeData(id, {
       fields: [
         ...data.fields,
         {
           id: `f-${nanoid(6)}`,
-          name: type === "text" ? "Text Input" : "Image Input",
+          name: type === "text" ? "Text input" : "Image input",
           type,
           value: "",
         },
@@ -130,26 +140,61 @@ export function RequestInputsNode({
       nodeId={id}
       title={data.label}
       icon={<FormInput className="h-3.5 w-3.5" />}
-      accent="#8b5cf6"
+      accent="#6c5ce7"
       selected={selected}
-      width={300}
+      width={260}
+      headerExtra={
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setAddOpen((v) => !v)}
+            className="nodrag rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+            aria-label="Add input field"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+          {addOpen && (
+            <div className="nodrag absolute right-0 top-6 z-20 w-32 rounded-lg border border-zinc-200 bg-white py-1 shadow-xl">
+              <button
+                type="button"
+                onClick={() => addField("text")}
+                className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] text-zinc-600 hover:bg-zinc-50"
+              >
+                <Type className="h-3 w-3" /> Text field
+              </button>
+              <button
+                type="button"
+                onClick={() => addField("image")}
+                className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[11px] text-zinc-600 hover:bg-zinc-50"
+              >
+                <ImagePlus className="h-3 w-3" /> Image field
+              </button>
+            </div>
+          )}
+        </div>
+      }
     >
       <div className="space-y-3">
+        {data.fields.length === 0 && (
+          <p className="py-2 text-center text-[11px] text-zinc-400">
+            Add a text or image field with “+”.
+          </p>
+        )}
         {data.fields.map((field) => (
-          <div key={field.id} className="relative" style={{ minHeight: 68 }}>
+          <div key={field.id} className="relative">
             <div className="mb-1 flex items-center gap-1.5">
               <input
                 value={field.name}
                 onChange={(e) => renameField(field.id, e.target.value)}
-                className="nodrag flex-1 bg-transparent text-[11px] font-semibold text-zinc-300 outline-none focus:text-violet-300"
+                className="nodrag flex-1 bg-transparent text-[11px] font-semibold text-zinc-700 outline-none focus:text-[#6c5ce7]"
               />
-              <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-zinc-500">
+              <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-zinc-500">
                 {field.type}
               </span>
               <button
                 type="button"
                 onClick={() => removeField(field.id)}
-                className="nodrag text-zinc-600 hover:text-red-400"
+                className="nodrag text-zinc-300 hover:text-red-500"
                 aria-label={`Remove ${field.name}`}
               >
                 <Trash2 className="h-3 w-3" />
@@ -177,23 +222,6 @@ export function RequestInputsNode({
             />
           </div>
         ))}
-
-        <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => addField("text")}
-            className="nodrag flex flex-1 items-center justify-center gap-1 rounded-md border border-zinc-700 py-1 text-[11px] text-zinc-400 hover:border-violet-500 hover:text-violet-300"
-          >
-            <Plus className="h-3 w-3" /> Text
-          </button>
-          <button
-            type="button"
-            onClick={() => addField("image")}
-            className="nodrag flex flex-1 items-center justify-center gap-1 rounded-md border border-zinc-700 py-1 text-[11px] text-zinc-400 hover:border-violet-500 hover:text-violet-300"
-          >
-            <ImagePlus className="h-3 w-3" /> Image
-          </button>
-        </div>
       </div>
     </NodeShell>
   );

@@ -2,9 +2,15 @@
 @import "@xyflow/react/dist/style.css";
 
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --accent: #8b5cf6;
+  --background: #ffffff;
+  --foreground: #18181b;
+  --canvas: #f7f7f8;
+  --accent: #6c5ce7;
+  --edge-text: #f59e0b;
+  --edge-image: #3b82f6;
+  --edge-video: #22c55e;
+  --edge-audio: #ec4899;
+  --edge-file: #64748b;
 }
 
 @theme inline {
@@ -20,46 +26,48 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* ---------- React Flow theming ---------- */
+/* ---------- React Flow theming (light, Magica-style) ---------- */
 
 .react-flow {
-  --xy-background-color: #09090b;
-  --xy-minimap-background-color: #18181b;
-  --xy-controls-button-background-color: #18181b;
-  --xy-controls-button-background-color-hover: #27272a;
-  --xy-controls-button-color: #d4d4d8;
-  --xy-controls-button-border-color: #3f3f46;
+  --xy-background-color: #f7f7f8;
+  --xy-minimap-background-color: #ffffff;
+  --xy-controls-button-background-color: #ffffff;
+  --xy-controls-button-background-color-hover: #f4f4f5;
+  --xy-controls-button-color: #52525b;
+  --xy-controls-button-border-color: #e4e4e7;
 }
 
 .react-flow__handle {
-  width: 11px;
-  height: 11px;
-  border: 2px solid #09090b;
-  background: #8b5cf6;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
-.react-flow__handle.handle-text { background: #8b5cf6; }
-.react-flow__handle.handle-image { background: #22d3ee; }
-.react-flow__handle.handle-video { background: #f472b6; }
-.react-flow__handle.handle-audio { background: #fbbf24; }
-.react-flow__handle.handle-file { background: #94a3b8; }
+.react-flow__handle.handle-text { background: var(--edge-text); }
+.react-flow__handle.handle-image { background: var(--edge-image); }
+.react-flow__handle.handle-video { background: var(--edge-video); }
+.react-flow__handle.handle-audio { background: var(--edge-audio); }
+.react-flow__handle.handle-file { background: var(--edge-file); }
 
-.react-flow__handle.connectingto {
-  background: #ef4444;
-}
-.react-flow__handle.valid {
-  background: #22c55e;
-}
+.react-flow__handle.connectingto { background: #ef4444; }
+.react-flow__handle.valid { background: #22c55e; }
 
-/* ---------- Animated purple edges ---------- */
+/* ---------- Animated edges (colored by data type) ---------- */
 
 .nextflow-edge {
   stroke: var(--accent);
   stroke-width: 2;
   stroke-dasharray: 6 4;
   animation: edge-flow 0.6s linear infinite;
-  filter: drop-shadow(0 0 3px rgba(139, 92, 246, 0.6));
 }
+
+.nextflow-edge.edge-text { stroke: var(--edge-text); }
+.nextflow-edge.edge-image { stroke: var(--edge-image); }
+.nextflow-edge.edge-video { stroke: var(--edge-video); }
+.nextflow-edge.edge-audio { stroke: var(--edge-audio); }
+.nextflow-edge.edge-file { stroke: var(--edge-file); }
 
 @keyframes edge-flow {
   to {
@@ -77,19 +85,19 @@ body {
 @keyframes node-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.65);
+    box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.55);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(139, 92, 246, 0);
+    box-shadow: 0 0 0 10px rgba(108, 92, 231, 0);
   }
 }
 
 .node-glow-success {
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 0 1.5px rgba(34, 197, 94, 0.55);
 }
 
 .node-glow-failed {
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 0 1.5px rgba(239, 68, 68, 0.6);
 }
 
 /* Custom scrollbars for panels */
@@ -97,6 +105,6 @@ body {
   width: 8px;
 }
 .panel-scroll::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #d4d4d8;
   border-radius: 4px;
 }

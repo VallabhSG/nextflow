@@ -13,12 +13,13 @@ import {
 import { nanoid } from "nanoid";
 import type {
   NodeKind,
+  PortDataType,
   SerializedEdge,
   SerializedNode,
   WorkflowGraph,
   WorkflowNodeData,
 } from "@/lib/workflow/types";
-import { NODE_SPECS } from "@/lib/workflow/types";
+import { handleDataType, NODE_SPECS } from "@/lib/workflow/types";
 import { checkConnection } from "@/lib/workflow/validation";
 
 export type FlowNode = Node<WorkflowNodeData>;
@@ -52,6 +53,10 @@ interface WorkflowStore {
   connectionError: string | null;
   /** Latest Response node output (from the most recent run). */
   responseOutput: string | null;
+  /** Latest outputs per node from the most recent run (for in-node display). */
+  nodeOutputs: Record<string, Record<string, string>>;
+  /** Registered by the canvas so node components can trigger runs. */
+  runHandler: ((nodeIds?: string[]) => void) | null;
 
   load: (id: string, name: string, graph: WorkflowGraph) => void;
   setWorkflowName: (name: string) => void;
@@ -71,15 +76,33 @@ interface WorkflowStore {
   setActiveRunId: (runId: string | null) => void;
   setConnectionError: (error: string | null) => void;
   setResponseOutput: (output: string | null) => void;
+  setNodeOutputs: (outputs: Record<string, Record<string, string>>) => void;
+  setRunHandler: (handler: ((nodeIds?: string[]) => void) | null) => void;
   toGraph: () => WorkflowGraph;
 }
 
-function toEdgeStyle(edge: FlowEdge): FlowEdge {
+function toEdgeStyle(edge: FlowEdge, dataType?: PortDataType | null): FlowEdge {
   return {
     ...edge,
     type: "animated",
     animated: false,
+    data: { ...edge.data, dataType: dataType ?? null },
   };
+}
+
+function edgeDataType(
+  nodes: Pick<FlowNode, "id" | "type" | "data">[],
+  source: string,
+  sourceHandle: string | null | undefined
+): PortDataType | null {
+  const node = nodes.find((n) => n.id === source);
+  if (!node || !sourceHandle) return null;
+  return handleDataType(
+    node.type as NodeKind,
+    node.data as WorkflowNodeData,
+    sourceHandle,
+    "source"
+  );
 }
 
 function serializeNodes(nodes: FlowNode[]): SerializedNode[] {
@@ -113,6 +136,8 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   activeRunId: null,
   connectionError: null,
   responseOutput: null,
+  nodeOutputs: {},
+  runHandler: null,
 
   load: (id, name, graph) =>
     set({
@@ -126,13 +151,20 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
         deletable: NODE_SPECS[n.type].deletable,
       })),
       edges: graph.edges.map((e) =>
-        toEdgeStyle({
-          id: e.id,
-          source: e.source,
-          sourceHandle: e.sourceHandle ?? undefined,
-          target: e.target,
-          targetHandle: e.targetHandle ?? undefined,
-        })
+        toEdgeStyle(
+          {
+            id: e.id,
+            source: e.source,
+            sourceHandle: e.sourceHandle ?? undefined,
+            target: e.target,
+            targetHandle: e.targetHandle ?? undefined,
+          },
+          edgeDataType(
+            graph.nodes.map((n) => ({ id: n.id, type: n.type, data: n.data })),
+            e.source,
+            e.sourceHandle
+          )
+        )
       ),
       past: [],
       future: [],
@@ -200,13 +232,16 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       return;
     }
     get().pushHistory();
-    const edge: FlowEdge = toEdgeStyle({
-      id: `edge-${nanoid(8)}`,
-      source: connection.source,
-      sourceHandle: connection.sourceHandle ?? undefined,
-      target: connection.target,
-      targetHandle: connection.targetHandle ?? undefined,
-    });
+    const edge: FlowEdge = toEdgeStyle(
+      {
+        id: `edge-${nanoid(8)}`,
+        source: connection.source,
+        sourceHandle: connection.sourceHandle ?? undefined,
+        target: connection.target,
+        targetHandle: connection.targetHandle ?? undefined,
+      },
+      edgeDataType(nodes, connection.source, connection.sourceHandle)
+    );
     set({
       edges: [...edges, edge],
       dirty: true,
@@ -326,6 +361,8 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   setActiveRunId: (runId) => set({ activeRunId: runId }),
   setConnectionError: (error) => set({ connectionError: error }),
   setResponseOutput: (output) => set({ responseOutput: output }),
+  setNodeOutputs: (outputs) => set({ nodeOutputs: outputs }),
+  setRunHandler: (handler) => set({ runHandler: handler }),
 
   toGraph: () => ({
     nodes: serializeNodes(get().nodes),

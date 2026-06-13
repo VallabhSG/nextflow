@@ -35,14 +35,14 @@ export interface RunDto {
 }
 
 const RUN_STATUS_STYLE: Record<RunDto["status"], string> = {
-  RUNNING: "bg-violet-500/15 text-violet-300 border-violet-500/40",
-  SUCCESS: "bg-green-500/15 text-green-400 border-green-500/40",
-  FAILED: "bg-red-500/15 text-red-400 border-red-500/40",
-  PARTIAL: "bg-yellow-500/15 text-yellow-400 border-yellow-500/40",
+  RUNNING: "bg-violet-500/10 text-violet-600 border-violet-300",
+  SUCCESS: "bg-green-500/10 text-green-600 border-green-300",
+  FAILED: "bg-red-500/10 text-red-600 border-red-300",
+  PARTIAL: "bg-yellow-500/10 text-yellow-600 border-yellow-300",
 };
 
 const NODE_STATUS_DOT: Record<NodeRunDto["status"], string> = {
-  PENDING: "bg-zinc-600",
+  PENDING: "bg-zinc-300",
   RUNNING: "bg-violet-400 animate-pulse",
   SUCCESS: "bg-green-400",
   FAILED: "bg-red-400",
@@ -87,10 +87,10 @@ function IoBlock({
             <img
               src={value}
               alt={key}
-              className="mt-1 max-h-24 rounded border border-zinc-800"
+              className="mt-1 max-h-24 rounded border border-zinc-200"
             />
           ) : (
-            <span className="break-words text-[11px] text-zinc-300">
+            <span className="break-words text-[11px] text-zinc-600">
               {truncate(String(value))}
             </span>
           )}
@@ -103,7 +103,7 @@ function IoBlock({
 function NodeRunRow({ nodeRun }: { nodeRun: NodeRunDto }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-950/50">
+    <div className="rounded-md border border-zinc-100 bg-zinc-50">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -117,7 +117,7 @@ function NodeRunRow({ nodeRun }: { nodeRun: NodeRunDto }) {
         <span
           className={`h-2 w-2 shrink-0 rounded-full ${NODE_STATUS_DOT[nodeRun.status]}`}
         />
-        <span className="flex-1 truncate text-xs text-zinc-200">
+        <span className="flex-1 truncate text-xs text-zinc-700">
           {nodeRun.nodeLabel}
         </span>
         <span className="text-[10px] text-zinc-500">
@@ -125,15 +125,15 @@ function NodeRunRow({ nodeRun }: { nodeRun: NodeRunDto }) {
         </span>
       </button>
       {open && (
-        <div className="border-t border-zinc-800 px-3 py-2">
-          <p className="text-[11px] text-zinc-400">
+        <div className="border-t border-zinc-100 px-3 py-2">
+          <p className="text-[11px] text-zinc-500">
             Status:{" "}
-            <span className="font-medium text-zinc-200">{nodeRun.status}</span>
+            <span className="font-medium text-zinc-700">{nodeRun.status}</span>
             {" · "}Type:{" "}
-            <span className="font-mono text-zinc-300">{nodeRun.nodeType}</span>
+            <span className="font-mono text-zinc-600">{nodeRun.nodeType}</span>
           </p>
           {nodeRun.error && (
-            <p className="mt-1 break-words rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-400">
+            <p className="mt-1 break-words rounded bg-red-500/10 px-2 py-1 text-[11px] text-red-600">
               {nodeRun.error}
             </p>
           )}
@@ -148,7 +148,7 @@ function NodeRunRow({ nodeRun }: { nodeRun: NodeRunDto }) {
 function RunCard({ run }: { run: RunDto }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60">
+    <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -168,7 +168,7 @@ function RunCard({ run }: { run: RunDto }) {
             >
               {run.status}
             </span>
-            <span className="rounded border border-zinc-700 bg-zinc-800/80 px-1.5 py-0.5 text-[10px] text-zinc-400">
+            <span className="rounded border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-500">
               {SCOPE_LABEL[run.scope]}
             </span>
           </div>
@@ -181,7 +181,7 @@ function RunCard({ run }: { run: RunDto }) {
         </div>
       </button>
       {open && (
-        <div className="space-y-1.5 border-t border-zinc-800 px-3 py-2">
+        <div className="space-y-1.5 border-t border-zinc-100 px-3 py-2">
           {run.nodeRuns.map((nodeRun) => (
             <NodeRunRow key={nodeRun.id} nodeRun={nodeRun} />
           ))}
@@ -198,17 +198,17 @@ interface HistoryPanelProps {
 
 export function HistoryPanel({ runs, loading }: HistoryPanelProps) {
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-zinc-800 bg-zinc-900/40">
-      <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
-        <History className="h-4 w-4 text-zinc-400" />
-        <h2 className="text-sm font-semibold text-zinc-200">History</h2>
+    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-zinc-200 bg-white">
+      <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-3">
+        <History className="h-4 w-4 text-zinc-500" />
+        <h2 className="text-sm font-semibold text-zinc-800">History</h2>
         {loading && (
           <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-zinc-500" />
         )}
       </div>
       <div className="panel-scroll flex-1 space-y-2 overflow-y-auto p-3">
         {runs.length === 0 ? (
-          <p className="px-2 py-8 text-center text-xs text-zinc-600">
+          <p className="px-2 py-8 text-center text-xs text-zinc-500">
             No runs yet. Execute the workflow to see its history here.
           </p>
         ) : (

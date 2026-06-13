@@ -11,13 +11,13 @@ export default async function DashboardPage() {
   if (!userId) redirect("/sign-in");
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <header className="border-b border-zinc-800 bg-zinc-900/50">
+    <div className="min-h-screen bg-zinc-50">
+      <header className="border-b border-zinc-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-6 py-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-white">
             <Workflow className="h-4.5 w-4.5" />
           </span>
-          <h1 className="text-lg font-bold text-zinc-100">NextFlow</h1>
+          <h1 className="text-lg font-bold text-zinc-900">NextFlow</h1>
           <div className="ml-auto">
             <UserButton />
           </div>
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <h2 className="mb-1 text-xl font-semibold text-zinc-100">
+        <h2 className="mb-1 text-xl font-semibold text-zinc-900">
           Your workflows
         </h2>
         <p className="mb-6 text-sm text-zinc-500">
