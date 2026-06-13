@@ -108,7 +108,12 @@ export async function executeCropImage(
   }
 }
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-pro";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-pro-preview";
+
+/** The API exposes 3.1 Pro under a -preview suffix; normalize older ids. */
+function normalizeModelId(id: string): string {
+  return id === "gemini-3.1-pro" ? "gemini-3.1-pro-preview" : id;
+}
 
 /** Execute a Gemini node: multimodal generate call. */
 export async function executeGemini(
@@ -127,7 +132,7 @@ export async function executeGemini(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: payload.model?.trim() || GEMINI_MODEL,
+    model: normalizeModelId(payload.model?.trim() || GEMINI_MODEL),
     ...(payload.systemPrompt?.trim()
       ? { systemInstruction: payload.systemPrompt }
       : {}),

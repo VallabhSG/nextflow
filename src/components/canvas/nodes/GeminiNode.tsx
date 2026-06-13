@@ -45,11 +45,14 @@ export function GeminiNode({
       width={290}
       headerExtra={
         <select
-          value={data.model ?? GEMINI_MODELS[0]}
-          onChange={(e) => updateNodeData(id, { model: e.target.value })}
+          value={data.model ?? ""}
+          onChange={(e) =>
+            updateNodeData(id, { model: e.target.value || undefined })
+          }
           className="nodrag rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5 text-[10px] text-zinc-600 outline-none focus:border-[#6c5ce7]"
           title="Model"
         >
+          <option value="">default model</option>
           {GEMINI_MODELS.map((m) => (
             <option key={m} value={m}>
               {m}
@@ -146,7 +149,7 @@ export function GeminiNode({
             className={inputClass}
           />
           <p className="text-[10px] text-zinc-400">
-            Runs as a Trigger.dev task · model {data.model ?? GEMINI_MODELS[0]}
+            Runs as a Trigger.dev task · model {data.model ?? "default (env)"}
           </p>
         </div>
       )}
