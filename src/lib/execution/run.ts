@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   buildInvokePayload,
   runWorkflowGraph,
+  toNodeOutputs,
   type NodeOutputs,
 } from "./scheduler";
 import {
@@ -120,14 +121,16 @@ async function runLocally(payload: WorkflowRunPayload): Promise<void> {
     invoke: async (node, inputs) => {
       const taskPayload = buildInvokePayload(node, inputs);
       if (node.type === "crop-image") {
-        return executeCropImage(
+        const result = await executeCropImage(
           taskPayload as unknown as CropImagePayload
-        ) as Promise<NodeOutputs>;
+        );
+        return toNodeOutputs(node.type, result);
       }
       if (node.type === "gemini") {
-        return executeGemini(
+        const result = await executeGemini(
           taskPayload as unknown as GeminiPayload
-        ) as Promise<NodeOutputs>;
+        );
+        return toNodeOutputs(node.type, result);
       }
       throw new Error(`Unsupported executable node: ${node.type}`);
     },

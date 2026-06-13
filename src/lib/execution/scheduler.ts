@@ -236,6 +236,23 @@ export async function runWorkflowGraph(
   return status;
 }
 
+/**
+ * Map raw executor results onto the node's output handle ids
+ * (e.g. crop's `{ imageUrl }` -> the `image` source handle).
+ */
+export function toNodeOutputs(
+  nodeType: string,
+  result: Record<string, unknown>
+): NodeOutputs {
+  if (nodeType === "crop-image") {
+    return { image: String(result.imageUrl ?? "") };
+  }
+  if (nodeType === "gemini") {
+    return { text: String(result.text ?? "") };
+  }
+  throw new Error(`Node type ${nodeType} is not executable`);
+}
+
 /** Build the payload for an executable node from its config + inputs. */
 export function buildInvokePayload(
   node: SerializedNode,

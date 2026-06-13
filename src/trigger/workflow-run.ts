@@ -2,6 +2,7 @@ import { task } from "@trigger.dev/sdk/v3";
 import {
   buildInvokePayload,
   runWorkflowGraph,
+  toNodeOutputs,
   type NodeOutputs,
 } from "@/lib/execution/scheduler";
 import type { CropImagePayload, GeminiPayload } from "@/lib/execution/executors";
@@ -38,14 +39,14 @@ export const workflowRunTask = task({
             taskPayload as unknown as CropImagePayload
           );
           if (!result.ok) throw new Error(String(result.error));
-          return result.output as NodeOutputs;
+          return toNodeOutputs(node.type, result.output);
         }
         if (node.type === "gemini") {
           const result = await geminiTask.triggerAndWait(
             taskPayload as unknown as GeminiPayload
           );
           if (!result.ok) throw new Error(String(result.error));
-          return result.output as NodeOutputs;
+          return toNodeOutputs(node.type, result.output);
         }
         throw new Error(`Unsupported executable node: ${node.type}`);
       },
