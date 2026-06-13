@@ -1,10 +1,25 @@
 "use client";
 
+interface TransloaditFile {
+  ssl_url?: string;
+}
+
 interface TransloaditResult {
   ok?: string;
   error?: string;
+  message?: string;
   assembly_ssl_url?: string;
-  results?: Record<string, Array<{ ssl_url?: string }>>;
+  uploads?: TransloaditFile[];
+  results?: Record<string, TransloaditFile[]>;
+}
+
+/** Hosted URL of the uploaded file: prefer an encoding result, else the raw upload. */
+function extractUrl(assembly: TransloaditResult): string | undefined {
+  for (const files of Object.values(assembly.results ?? {})) {
+    const url = files?.[0]?.ssl_url;
+    if (url) return url;
+  }
+  return assembly.uploads?.[0]?.ssl_url;
 }
 
 async function readAsDataUrl(file: File): Promise<string> {
@@ -60,7 +75,7 @@ export async function uploadImage(file: File): Promise<string> {
     polls++;
   }
 
-  const url = assembly.results?.[":original"]?.[0]?.ssl_url;
+  const url = extractUrl(assembly);
   if (!url) throw new Error("Transloadit returned no file URL");
   return url;
 }
