@@ -52,3 +52,6 @@ next-env.d.ts
 # Playwright MCP artifacts & UI comparison screenshots
 .playwright-mcp/
 /*.png
+
+# demo recording artifacts
+/demo/
