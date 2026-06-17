@@ -173,7 +173,7 @@ describe("runWorkflowGraph", () => {
     const calls = vi.mocked(prisma.nodeRun.updateMany).mock.calls;
     const statusFor = (nodeId: string) =>
       calls
-        .filter((c) => c[0].where.nodeId === nodeId)
+        .filter((c) => c[0].where?.nodeId === nodeId)
         .map((c) => c[0].data.status)
         .at(-1);
     expect(statusFor("g1")).toBe("FAILED");
@@ -224,7 +224,7 @@ describe("runWorkflowGraph", () => {
       graph,
       includeIds: new Set(graph.nodes.map((n) => n.id)),
       cachedOutputs: new Map(),
-      invoke: async (node, inputs) => {
+      invoke: async (node, inputs): Promise<NodeOutputs> => {
         executed.push(node.id);
         received[node.id] = inputs;
         if (node.type === "crop-image")
