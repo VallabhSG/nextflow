@@ -172,6 +172,10 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       dirty: false,
       nodeStatuses: {},
       activeRunId: null,
+      // Clear the previous workflow's run output so a freshly loaded/created
+      // workflow never shows a stale Response "Final Output" or node outputs.
+      responseOutput: null,
+      nodeOutputs: {},
     }),
 
   setWorkflowName: (name) => set({ workflowName: name, dirty: true }),
