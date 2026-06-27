@@ -8,8 +8,6 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -29,8 +27,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@clerk/testing": "^2.1.7",
-    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@trigger.dev/build": "4.4.6",
     "@types/node": "^20",
