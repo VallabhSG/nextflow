@@ -53,5 +53,10 @@ next-env.d.ts
 .playwright-mcp/
 /*.png
 
+# Playwright E2E artifacts
+/test-results/
+/playwright-report/
+/e2e/.auth/
+
 # demo recording artifacts
 /demo/
