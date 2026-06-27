@@ -26,6 +26,26 @@ describe("workflow store — load() resets prior run output", () => {
     expect(next.nodeOutputs).toEqual({});
   });
 
+  test("selection and dimension changes do not mark the workflow dirty (no auto-save on open)", () => {
+    const store = useWorkflowStore.getState();
+    store.load("wf-1", "First", buildEmptyGraph());
+    expect(useWorkflowStore.getState().dirty).toBe(false);
+
+    // React Flow fires these on mount / hover / click — they must not dirty.
+    store.onNodesChange([
+      { id: "request-inputs", type: "dimensions", dimensions: { width: 280, height: 120 }, resizing: false },
+    ]);
+    store.onNodesChange([{ id: "response", type: "select", selected: true }]);
+    store.onEdgesChange([{ id: "e1", type: "select", selected: true }]);
+    expect(useWorkflowStore.getState().dirty).toBe(false);
+
+    // A real move (position change) must dirty so auto-save persists it.
+    store.onNodesChange([
+      { id: "response", type: "position", position: { x: 50, y: 60 }, dragging: false },
+    ]);
+    expect(useWorkflowStore.getState().dirty).toBe(true);
+  });
+
   test("resetRunState clears live-run state on canvas unmount without touching the graph", () => {
     // Arrange: a workflow with a finished run still in the singleton store.
     const store = useWorkflowStore.getState();

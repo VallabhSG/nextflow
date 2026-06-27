@@ -192,18 +192,27 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     });
     const removals = filtered.some((c) => c.type === "remove");
     if (removals) get().pushHistory();
+    // Selection and dimension-measurement changes (React Flow fires these on
+    // mount and on hover/select) don't alter the persisted graph, so they must
+    // not mark the workflow dirty — otherwise auto-save fires on every open and
+    // on every node click.
+    const affectsGraph = filtered.some(
+      (c) => c.type !== "select" && c.type !== "dimensions"
+    );
     set({
       nodes: applyNodeChanges(filtered, get().nodes),
-      dirty: true,
+      dirty: get().dirty || affectsGraph,
     });
   },
 
   onEdgesChange: (changes) => {
     const removals = changes.some((c) => c.type === "remove");
     if (removals) get().pushHistory();
+    // Pure selection changes don't change the persisted graph (see above).
+    const affectsGraph = changes.some((c) => c.type !== "select");
     set({
       edges: applyEdgeChanges(changes, get().edges),
-      dirty: true,
+      dirty: get().dirty || affectsGraph,
     });
   },
 
