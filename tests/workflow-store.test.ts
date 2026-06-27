@@ -26,6 +26,29 @@ describe("workflow store — load() resets prior run output", () => {
     expect(next.nodeOutputs).toEqual({});
   });
 
+  test("resetRunState clears live-run state on canvas unmount without touching the graph", () => {
+    // Arrange: a workflow with a finished run still in the singleton store.
+    const store = useWorkflowStore.getState();
+    store.load("wf-1", "First", buildSampleGraph());
+    store.setNodeStatuses({ "gemini-1": "SUCCESS" });
+    store.setActiveRunId("run-xyz");
+    store.setResponseOutput("Final marketing post");
+    store.setNodeOutputs({ "gemini-1": { text: "stale" } });
+
+    // Act: leaving the canvas resets run state (the next mount starts clean,
+    // so no stale "Final Output" flashes before the next load()).
+    store.resetRunState();
+
+    // Assert: run state cleared, graph untouched.
+    const next = useWorkflowStore.getState();
+    expect(next.nodeStatuses).toEqual({});
+    expect(next.activeRunId).toBeNull();
+    expect(next.responseOutput).toBeNull();
+    expect(next.nodeOutputs).toEqual({});
+    expect(next.nodes.length).toBeGreaterThan(0);
+    expect(next.workflowName).toBe("First");
+  });
+
   test("resets the full live-run contract (statuses + active run + outputs)", () => {
     // Arrange
     const store = useWorkflowStore.getState();

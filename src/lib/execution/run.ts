@@ -24,6 +24,38 @@ export interface StartRunOptions {
   selectedIds?: string[];
 }
 
+/**
+ * Absolute safety cap for a single node in the in-process dev runner. Crop
+ * nodes have a mandatory 30s delay plus FFmpeg work, so this is generously
+ * above that. Without it, a hung fetch / FFmpeg / Gemini call would leave the
+ * run RUNNING forever with no timeout and no error. The production Trigger.dev
+ * path has its own `maxDuration` + poll timeout and is unaffected.
+ */
+const NODE_TIMEOUT_MS = 5 * 60 * 1000;
+
+/** Reject if `promise` does not settle within `ms`, producing a clear error. */
+export function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 function scopeFor(selectedIds: string[] | undefined, total: number): RunScope {
   if (!selectedIds || selectedIds.length === 0 || selectedIds.length === total)
     return "FULL";
@@ -125,15 +157,22 @@ async function runLocally(payload: WorkflowRunPayload): Promise<void> {
     cachedOutputs: new Map(Object.entries(payload.cachedOutputs)),
     invoke: async (node, inputs) => {
       const taskPayload = buildInvokePayload(node, inputs);
+      const label = `${node.type} node "${
+        (node.data as { label?: string }).label ?? node.id
+      }"`;
       if (node.type === "crop-image") {
-        const result = await executeCropImage(
-          taskPayload as unknown as CropImagePayload
+        const result = await withTimeout(
+          executeCropImage(taskPayload as unknown as CropImagePayload),
+          NODE_TIMEOUT_MS,
+          label
         );
         return toNodeOutputs(node.type, result);
       }
       if (node.type === "gemini") {
-        const result = await executeGemini(
-          taskPayload as unknown as GeminiPayload
+        const result = await withTimeout(
+          executeGemini(taskPayload as unknown as GeminiPayload),
+          NODE_TIMEOUT_MS,
+          label
         );
         return toNodeOutputs(node.type, result);
       }

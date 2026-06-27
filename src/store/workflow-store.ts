@@ -79,6 +79,8 @@ interface WorkflowStore {
   setResponseOutput: (output: string | null) => void;
   setNodeOutputs: (outputs: Record<string, Record<string, string>>) => void;
   setRunHandler: (handler: ((nodeIds?: string[]) => void) | null) => void;
+  /** Clear all live-run state (statuses, active run, outputs) without touching the graph. */
+  resetRunState: () => void;
   toGraph: () => WorkflowGraph;
 }
 
@@ -386,6 +388,14 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   setResponseOutput: (output) => set({ responseOutput: output }),
   setNodeOutputs: (outputs) => set({ nodeOutputs: outputs }),
   setRunHandler: (handler) => set({ runHandler: handler }),
+
+  resetRunState: () =>
+    set({
+      nodeStatuses: {},
+      activeRunId: null,
+      responseOutput: null,
+      nodeOutputs: {},
+    }),
 
   toGraph: () => ({
     nodes: serializeNodes(get().nodes),

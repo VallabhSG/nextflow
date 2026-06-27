@@ -31,6 +31,7 @@ import {
 import { useWorkflowStore } from "@/store/workflow-store";
 import type { NodeKind, WorkflowGraph } from "@/lib/workflow/types";
 import { workflowExportSchema } from "@/lib/workflow/types";
+import { deriveRunState } from "@/lib/workflow/run-state";
 import { RequestInputsNode } from "./nodes/RequestInputsNode";
 import { CropImageNode } from "./nodes/CropImageNode";
 import { GeminiNode } from "./nodes/GeminiNode";
@@ -80,6 +81,15 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
 
+  // The store is a module-level singleton kept alive across client navigation.
+  // Clear the live-run state when leaving the canvas so the next workflow we
+  // open never flashes the previous run's "Final Output" before load() fires.
+  useEffect(() => {
+    return () => {
+      useWorkflowStore.getState().resetRunState();
+    };
+  }, []);
+
   const showToast = useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 3500);
@@ -102,6 +112,21 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
       if (!res.ok) return;
       const body = (await res.json()) as { data: RunDto[] };
       setRuns(body.data);
+
+      // Re-attach to a run that is still in progress (e.g. after a refresh or
+      // navigating back to the canvas). Without this the run only shows up in
+      // the history panel — the canvas node glows and run spinner stay idle.
+      const newest = body.data[0];
+      const state = useWorkflowStore.getState();
+      if (newest && newest.status === "RUNNING" && !state.activeRunId) {
+        const derived = deriveRunState(newest);
+        state.setNodeStatuses(derived.statuses);
+        state.setNodeOutputs(derived.outputs);
+        if (derived.responseOutput) {
+          state.setResponseOutput(derived.responseOutput);
+        }
+        state.setActiveRunId(newest.id);
+      }
     } finally {
       setHistoryLoading(false);
     }
@@ -121,20 +146,11 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
       const body = (await res.json()) as { data: RunDto };
       const run = body.data;
 
-      const statuses: Record<string, RunDto["nodeRuns"][number]["status"]> = {};
-      const outputs: Record<string, Record<string, string>> = {};
-      for (const nr of run.nodeRuns) {
-        statuses[nr.nodeId] = nr.status;
-        if (nr.outputs) outputs[nr.nodeId] = nr.outputs;
-      }
-      store.setNodeStatuses(statuses);
-      store.setNodeOutputs({ ...store.nodeOutputs, ...outputs });
-
-      const responseRun = run.nodeRuns.find(
-        (nr) => nr.nodeType === "response"
-      );
-      if (responseRun?.outputs?.output) {
-        store.setResponseOutput(responseRun.outputs.output);
+      const derived = deriveRunState(run);
+      store.setNodeStatuses(derived.statuses);
+      store.setNodeOutputs({ ...store.nodeOutputs, ...derived.outputs });
+      if (derived.responseOutput) {
+        store.setResponseOutput(derived.responseOutput);
       }
 
       if (run.status !== "RUNNING") {
@@ -154,14 +170,17 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
   }, [store.activeRunId]);
 
   const save = useCallback(async (): Promise<boolean> => {
+    // Read the freshest state at call time so the debounced auto-save never
+    // persists a stale snapshot captured when the timer was scheduled.
+    const state = useWorkflowStore.getState();
     setSaving(true);
     try {
       const res = await fetch(`/api/workflows/${workflowId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: store.workflowName,
-          graph: store.toGraph(),
+          name: state.workflowName,
+          graph: state.toGraph(),
         }),
       });
       if (!res.ok) {
@@ -169,13 +188,20 @@ function CanvasInner({ workflowId, workflowName, graph }: WorkflowCanvasProps) {
         showToast(body.error ?? "Failed to save");
         return false;
       }
-      store.markSaved();
+      state.markSaved();
       return true;
     } finally {
       setSaving(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId, showToast]);
+
+  // Auto-save: debounce edits and persist 2s after the last change. `dirty`
+  // flips false on save, so a settled canvas schedules no further saves.
+  useEffect(() => {
+    if (!store.dirty) return;
+    const timer = window.setTimeout(() => void save(), 2000);
+    return () => window.clearTimeout(timer);
+  }, [store.dirty, store.nodes, store.edges, store.workflowName, save]);
 
   const run = useCallback(
     async (nodeIds?: string[]) => {

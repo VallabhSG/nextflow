@@ -296,6 +296,30 @@ describe("buildInvokePayload", () => {
     });
   });
 
+  test("connected crop dimension overrides the manual field", () => {
+    const payload = buildInvokePayload(cropNode, {
+      image: "http://img",
+      cropX: "5",
+      cropWidth: "80",
+    });
+    expect(payload).toEqual({
+      imageUrl: "http://img",
+      cropX: 5, // from connected input
+      cropY: 20, // manual fallback
+      cropWidth: 80, // from connected input
+      cropHeight: 40, // manual fallback
+    });
+  });
+
+  test("empty or non-numeric crop input falls back to the manual value", () => {
+    const payload = buildInvokePayload(cropNode, {
+      image: "http://img",
+      cropX: "", // unconnected/blank
+      cropY: "abc", // not a number
+    });
+    expect(payload).toMatchObject({ cropX: 10, cropY: 20 });
+  });
+
   test("connected prompt input takes precedence over manual entry", () => {
     const payload = buildInvokePayload(geminiNode, {
       prompt: "upstream text",

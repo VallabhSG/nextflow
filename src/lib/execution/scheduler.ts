@@ -273,12 +273,20 @@ export function buildInvokePayload(
 ): Record<string, unknown> {
   if (node.type === "crop-image") {
     const data = node.data as CropImageData;
+    // A connected dimension handle overrides the manual field. Unconnected,
+    // empty, or non-numeric inputs fall back to the node's configured value.
+    const dim = (handle: string, fallback: number): number => {
+      const raw = inputs[handle];
+      if (raw === undefined || raw.trim() === "") return fallback;
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
     return {
       imageUrl: inputs["image"] ?? "",
-      cropX: data.cropX,
-      cropY: data.cropY,
-      cropWidth: data.cropWidth,
-      cropHeight: data.cropHeight,
+      cropX: dim("cropX", data.cropX),
+      cropY: dim("cropY", data.cropY),
+      cropWidth: dim("cropWidth", data.cropWidth),
+      cropHeight: dim("cropHeight", data.cropHeight),
     };
   }
   if (node.type === "gemini") {

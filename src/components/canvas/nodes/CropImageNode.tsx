@@ -17,12 +17,25 @@ const CROP_FIELDS: Array<{
   { key: "cropHeight", label: "H %", min: 1 },
 ];
 
+// Ports are laid out as a single contiguous stack of fixed-height rows so the
+// absolutely-positioned handles line up with their rows (same approach as
+// GeminiNode). Row 0 is the image; rows 1-4 are the crop dimensions. Nothing
+// may sit between these rows or the handle offsets would drift.
+const PORTS_TOP = 52;
+const PORT_SPACING = 30;
+
 export function CropImageNode({
   id,
   data,
   selected,
 }: NodeProps & { data: CropImageData }) {
   const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
+  const edges = useWorkflowStore((s) => s.edges);
+
+  // Connected input handles grey out their manual entry fields.
+  const connected = new Set(
+    edges.filter((e) => e.target === id).map((e) => e.targetHandle)
+  );
 
   return (
     <NodeShell
@@ -33,51 +46,86 @@ export function CropImageNode({
       selected={selected}
       runnable
       deletable
-      width={250}
+      width={260}
       cost={0.001}
     >
+      {/* Image input (row 0) + cropped-image output on the right. */}
       <Handle
         type="target"
         position={Position.Left}
         id="image"
         className="handle-image"
-        style={{ top: 52 }}
+        style={{ top: PORTS_TOP }}
       />
       <Handle
         type="source"
         position={Position.Right}
         id="image"
         className="handle-image"
-        style={{ top: 52 }}
+        style={{ top: PORTS_TOP }}
       />
+      {/* One connectable input handle per crop dimension (rows 1-4). */}
+      {CROP_FIELDS.map((field, i) => (
+        <Handle
+          key={field.key}
+          type="target"
+          position={Position.Left}
+          id={field.key}
+          className="handle-text"
+          style={{ top: PORTS_TOP + (i + 1) * PORT_SPACING }}
+        />
+      ))}
 
-      <p className="text-[10px] leading-6 text-zinc-500">Image *</p>
+      {/* Contiguous port rows — keep aligned with the handle offsets above. */}
+      <div>
+        <div
+          className="flex items-center text-[10px] text-zinc-500"
+          style={{ height: PORT_SPACING }}
+        >
+          Image *
+          {connected.has("image") && (
+            <span className="ml-1 font-medium text-[#3b82f6]">· connected</span>
+          )}
+        </div>
+        {CROP_FIELDS.map(({ key, label, min }) => {
+          const isConnected = connected.has(key);
+          return (
+            <div
+              key={key}
+              className="flex items-center gap-2"
+              style={{ height: PORT_SPACING }}
+            >
+              <span
+                className={`w-9 shrink-0 text-[10px] ${
+                  isConnected ? "font-medium text-[#3b82f6]" : "text-zinc-500"
+                }`}
+              >
+                {label}
+              </span>
+              <input
+                type="number"
+                min={min}
+                max={100}
+                value={data[key]}
+                disabled={isConnected}
+                placeholder={isConnected ? "connected" : undefined}
+                onChange={(e) =>
+                  updateNodeData(id, { [key]: Number(e.target.value) })
+                }
+                className={`${inputClass} flex-1 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400`}
+              />
+            </div>
+          );
+        })}
+      </div>
 
-      <label className={fieldLabelClass}>Label</label>
+      <label className={`${fieldLabelClass} mt-2`}>Label</label>
       <input
         value={data.label}
         onChange={(e) => updateNodeData(id, { label: e.target.value })}
-        className={`${inputClass} mb-2`}
+        className={inputClass}
       />
 
-      <label className={fieldLabelClass}>Crop Region</label>
-      <div className="grid grid-cols-2 gap-2">
-        {CROP_FIELDS.map(({ key, label, min }) => (
-          <div key={key} className="flex items-center gap-1.5">
-            <span className="w-8 text-[10px] text-zinc-500">{label}</span>
-            <input
-              type="number"
-              min={min}
-              max={100}
-              value={data[key]}
-              onChange={(e) =>
-                updateNodeData(id, { [key]: Number(e.target.value) })
-              }
-              className={inputClass}
-            />
-          </div>
-        ))}
-      </div>
       <p className="mt-1.5 text-[10px] text-zinc-400">
         FFmpeg · Trigger.dev · 30s+ processing
       </p>

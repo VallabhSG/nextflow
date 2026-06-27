@@ -122,7 +122,16 @@ export const NODE_SPECS: Record<NodeKind, NodeSpec> = {
     category: "Image",
     deletable: true,
     executable: true,
-    inputs: [{ id: "image", label: "Image", dataType: "image", required: true }],
+    // The image is required; each crop dimension is also a connectable input
+    // (text/number) so the crop region can be driven by upstream nodes. When a
+    // dimension handle is unconnected the node's manual field value is used.
+    inputs: [
+      { id: "image", label: "Image", dataType: "image", required: true },
+      { id: "cropX", label: "X %", dataType: "text" },
+      { id: "cropY", label: "Y %", dataType: "text" },
+      { id: "cropWidth", label: "W %", dataType: "text" },
+      { id: "cropHeight", label: "H %", dataType: "text" },
+    ],
     outputs: [{ id: "image", label: "Cropped Image", dataType: "image" }],
   },
   gemini: {
