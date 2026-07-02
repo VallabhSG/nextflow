@@ -102,7 +102,11 @@ export function checkConnection(
   if (!sourceType || !targetType) {
     return { valid: false, reason: "Unknown handle" };
   }
-  if (sourceType !== targetType) {
+  // The Response node is a terminal display: it accepts any single input
+  // (text OR image) and renders whatever the workflow produces, so it is
+  // exempt from the strict source/target type match.
+  const targetAcceptsAnyType = targetNode.type === "response";
+  if (!targetAcceptsAnyType && sourceType !== targetType) {
     return {
       valid: false,
       reason: `Type mismatch: ${sourceType} → ${targetType}`,

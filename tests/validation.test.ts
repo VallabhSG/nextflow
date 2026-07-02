@@ -130,6 +130,28 @@ describe("type-safe connections", () => {
     expect(result.valid).toBe(true);
   });
 
+  test("Response node accepts an image connection (terminal display)", () => {
+    // A Crop image output wired straight into Response must be allowed even
+    // though the Response input is nominally text.
+    const result = checkConnection(nodes, [], {
+      source: "crop",
+      sourceHandle: "image",
+      target: "out",
+      targetHandle: "input",
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  test("Response node still accepts a text connection", () => {
+    const result = checkConnection(nodes, [], {
+      source: "llm",
+      sourceHandle: "text",
+      target: "out",
+      targetHandle: "input",
+    });
+    expect(result.valid).toBe(true);
+  });
+
   test("rejects a second edge into an occupied single input", () => {
     const existing = [
       {
